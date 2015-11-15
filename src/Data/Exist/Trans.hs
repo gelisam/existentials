@@ -43,8 +43,12 @@ import Data.Functor.Identity
 -- 
 -- To approximate `exists a. a`, use `Some Identity`.
 -- 
---   >>> let ys = [Some (Identity 3), Some (Identity "foo")] :: [Some Identity]
---   >>> length ys
+--   >>> :{
+--   let ys = [ Some (Identity 3)
+--            , Some (Identity "foo")
+--            ] :: [Some Identity]
+--    in length ys
+--   :}
 --   2
 data Some f where
     Some :: f a -> Some f
