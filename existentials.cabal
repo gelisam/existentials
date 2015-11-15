@@ -14,6 +14,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Data.Exist.Trans.Test
+                     , Data.Exist.Trans
   build-depends:       base
                      , doctest
   hs-source-dirs:      src
