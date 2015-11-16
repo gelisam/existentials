@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs, RankNTypes #-}
 module Data.Exist.Trans where
 
 import Data.Functor.Identity
@@ -11,44 +11,37 @@ import Data.Functor.Identity
 --   >>> let y = Some (Right 3) :: Some (Either String)
 -- 
 -- Since the type information is lost, we can't print values of that type
--- nor do anything else with those values.
+-- nor do anything else with those values. Here we fmap those values to ()
+-- in order to show the surrounding structure.
 -- 
---   >>> :{
---   case x of
---     Some (Just _) -> "Just _"
---     Some Nothing  -> show Nothing
---   :}
---   "Just _"
---   
---   >>> :{
---   case y of
---     Some (Left  s) -> show (Left s)
---     Some (Right _) -> "Right _"
---   :}
---   "Right _"
+--   >>> let fmapU = fmap (const ())
+--   >>> unSome fmapU x
+--   Just ()
+--   >>> unSome fmapU y
+--   Right ()
 -- 
 -- Note that the existential quantifier is outside of the type constructor.
 -- In particular `Some []` corresponds to `exists a. [a]`, not to `[exists a. a]`,
 -- and so is not a heterogenous list.
 -- 
 --   -- type mismatch
---   -- >>> let xs = Some [3, "foo"] :: Some []
+--   -- >>> Some [(), "foo"] :: Some []
 --   
---   >>> let x = Some [3, 4] :: Some []
---   >>> :{
---   case x of
---     Some xs -> length xs
---   :}
---   2
+--   >>> unSome fmapU (Some [3, 4] :: Some [])
+--   [(),()]
 -- 
 -- To approximate `exists a. a`, use `Some Identity`.
 -- 
 --   >>> :{
---   let ys = [ Some (Identity 3)
+--   let xs :: [Some Identity]
+--       xs = [ Some (Identity 3)
 --            , Some (Identity "foo")
---            ] :: [Some Identity]
---    in length ys
+--            ]
+--   in fmap (unSome (runIdentity . fmapU)) xs
 --   :}
---   2
+--   [(),()]
 data Some f where
     Some :: f a -> Some f
+
+unSome :: (forall a. f a -> r) -> Some f -> r
+unSome cc (Some x) = cc x
