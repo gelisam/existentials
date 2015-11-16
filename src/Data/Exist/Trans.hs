@@ -1,23 +1,37 @@
-{-# LANGUAGE GADTs, RankNTypes #-}
+{-# LANGUAGE GADTs, PolyKinds, RankNTypes #-}
 module Data.Exist.Trans where
 
 import Data.Functor.Identity
 
+-- $setup
+-- >>> :set -XRankNTypes
+-- >>> import Data.Bifunctor
+-- 
+-- Since existential quantifiers hide the type information, we can't print
+-- values of an existentially-quantified type nor do anything else with those
+-- values. In this file's examples, we'll fmap those values to () in order to
+-- show the surrounding structure.
+-- 
+-- >>> let constU = const ()
+-- >>> let fmapU = fmap constU
 
 -- |
--- Hide the last parameter of a type constructor.
+-- Existentially-quantify over the last parameter of a type constructor.
 -- 
---   >>> let x = Some (Just 3) :: Some Maybe
---   >>> let y = Some (Right 3) :: Some (Either String)
+-- Here are `exists a. Maybe a` and `exists a. Either String a`:
 -- 
--- Since the type information is lost, we can't print values of that type
--- nor do anything else with those values. Here we fmap those values to ()
--- in order to show the surrounding structure.
--- 
---   >>> let fmapU = fmap (const ())
---   >>> unSome fmapU x
+--   >>> :{
+--   let x :: Some Maybe
+--       x = Some (Just 3)
+--   in unSome fmapU x
+--   :}
 --   Just ()
---   >>> unSome fmapU y
+--   
+--   >>> :{
+--   let x :: Some (Either String)
+--       x = Some (Right 3)
+--   in unSome fmapU x
+--   :}
 --   Right ()
 -- 
 -- Note that the existential quantifier is outside of the type constructor.
@@ -30,7 +44,7 @@ import Data.Functor.Identity
 --   >>> unSome fmapU (Some [3, 4] :: Some [])
 --   [(),()]
 -- 
--- To approximate `exists a. a`, use `Some Identity`.
+-- To approximate `exists a. a`, use `Some Identity`:
 -- 
 --   >>> :{
 --   let xs :: [Some Identity]
@@ -45,3 +59,28 @@ data Some f where
 
 unSome :: (forall a. f a -> r) -> Some f -> r
 unSome cc (Some x) = cc x
+
+
+-- |
+-- Transformer variant of `Some`.
+-- 
+-- This allows nested quantifiers. Here's `exists a b. Either a b`:
+-- 
+--   >>> type EitherXX = SomeT Some Either
+--   >>> :{
+--   let mkFoo :: Either a b -> EitherXX
+--       mkFoo = SomeT . Some
+--       --
+--       unFoo :: (forall a b. Either a b -> r) -> EitherXX -> r
+--       unFoo cc = unSomeT $ unSome $ cc
+--       --
+--       myFoo :: [EitherXX]
+--       myFoo = [mkFoo (Left 1), mkFoo (Left "foo"), mkFoo (Right 42)]
+--   in map (unFoo (bimap constU constU)) myFoo
+--   :}
+--   [Left (),Left (),Right ()]
+data SomeT t f where
+    SomeT :: t (f a) -> SomeT t f
+
+unSomeT :: (forall a. t (f a) -> r) -> SomeT t f -> r
+unSomeT cc (SomeT x) = cc x
