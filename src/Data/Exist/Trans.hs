@@ -9,11 +9,19 @@ import Data.Functor.Identity
 -- 
 -- Since existential quantifiers hide the type information, we can't print
 -- values of an existentially-quantified type nor do anything else with those
--- values. In this file's examples, we'll fmap those values to () in order to
+-- values. In this file's examples, we'll blank out those values in order to
 -- show the surrounding structure.
 -- 
--- >>> let constU = const ()
--- >>> let fmapU = fmap constU
+-- >>> :{
+-- let blank :: a -> ()
+--     blank = const ()
+--     --
+--     blankFunctor :: Functor f => f a -> f ()
+--     blankFunctor = fmap blank
+--     --
+--     blankBifunctor :: Bifunctor f => f a b -> f () ()
+--     blankBifunctor = bimap blank blank
+-- :}
 
 -- |
 -- Existentially-quantify over the last parameter of a type constructor.
@@ -23,14 +31,14 @@ import Data.Functor.Identity
 --   >>> :{
 --   let x :: Some Maybe
 --       x = Some (Just 3)
---   in unSome fmapU x
+--   in unSome blankFunctor x
 --   :}
 --   Just ()
 --   
 --   >>> :{
 --   let x :: Some (Either String)
 --       x = Some (Right 3)
---   in unSome fmapU x
+--   in unSome blankFunctor x
 --   :}
 --   Right ()
 -- 
@@ -41,7 +49,7 @@ import Data.Functor.Identity
 --   -- type mismatch
 --   -- >>> Some [(), "foo"] :: Some []
 --   
---   >>> unSome fmapU (Some [3, 4] :: Some [])
+--   >>> unSome blankFunctor (Some [3, 4] :: Some [])
 --   [(),()]
 -- 
 -- To approximate `exists a. a`, use `Some Identity`:
@@ -51,7 +59,7 @@ import Data.Functor.Identity
 --       xs = [ Some (Identity 3)
 --            , Some (Identity "foo")
 --            ]
---   in fmap (unSome (runIdentity . fmapU)) xs
+--   in fmap (unSome (runIdentity . blankFunctor)) xs
 --   :}
 --   [(),()]
 data Some f where
@@ -76,7 +84,7 @@ unSome cc (Some x) = cc x
 --       --
 --       myFoo :: [EitherXX]
 --       myFoo = [mkFoo (Left 1), mkFoo (Left "foo"), mkFoo (Right 42)]
---   in map (unFoo (bimap constU constU)) myFoo
+--   in map (unFoo blankBifunctor) myFoo
 --   :}
 --   [Left (),Left (),Right ()]
 data SomeT t f where
