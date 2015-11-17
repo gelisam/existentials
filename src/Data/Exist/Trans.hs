@@ -95,14 +95,13 @@ import Data.Functor.Identity
 --   in fmap (unX blank) myXs
 --   :}
 --   [(),()]
-data Some f where
-    Some :: f a -> Some f
+type Some = SomeT Identity
 
 mkSome :: f a -> Some f
-mkSome = Some
+mkSome = mkSomeT . Identity
 
 unSome :: (forall a. f a -> r) -> Some f -> r
-unSome cc (Some x) = cc x
+unSome cc = unSomeT (cc . runIdentity)
 
 
 -- |
