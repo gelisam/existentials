@@ -23,6 +23,7 @@ import Data.Functor.Identity
 --     blankBifunctor = bimap blank blank
 -- :}
 
+
 -- |
 -- Existentially-quantify over the last parameter of a type constructor.
 -- 
@@ -31,7 +32,7 @@ import Data.Functor.Identity
 --   >>> type MaybeX = Some Maybe
 --   >>> :{
 --   let mkMaybeX :: Maybe a -> MaybeX
---       mkMaybeX = Some
+--       mkMaybeX = mkSome
 --       --
 --       unMaybeX :: (forall a. Maybe a -> r) -> MaybeX -> r
 --       unMaybeX cc = unSome $ cc
@@ -45,7 +46,7 @@ import Data.Functor.Identity
 --   >>> type EitherStringX = Some (Either String)
 --   >>> :{
 --   let mkEitherStringX :: Either String a -> EitherStringX
---       mkEitherStringX = Some
+--       mkEitherStringX = mkSome
 --       --
 --       unEitherStringX :: (forall a. Either String a -> r) -> EitherStringX -> r
 --       unEitherStringX cc = unSome $ cc
@@ -61,12 +62,12 @@ import Data.Functor.Identity
 -- and so is not a heterogenous list.
 -- 
 --   -- type mismatch
---   -- >>> Some [(), "foo"] :: Some []
+--   -- >>> mkSome [(), "foo"] :: Some []
 --   
 --   >>> type ListX = Some []
 --   >>> :{
 --   let mkListX :: [a] -> ListX
---       mkListX = Some
+--       mkListX = mkSome
 --       --
 --       unListX :: (forall a. [a] -> r) -> ListX -> r
 --       unListX cc = unSome $ cc
@@ -82,7 +83,7 @@ import Data.Functor.Identity
 --   >>> type X = Some Identity
 --   >>> :{
 --   let mkX :: a -> X
---       mkX = Some . Identity
+--       mkX = mkSome . Identity
 --       --
 --       unX :: (forall a. a -> r) -> X -> r
 --       unX cc = unSome (cc . runIdentity)
@@ -97,6 +98,9 @@ import Data.Functor.Identity
 data Some f where
     Some :: f a -> Some f
 
+mkSome :: f a -> Some f
+mkSome = Some
+
 unSome :: (forall a. f a -> r) -> Some f -> r
 unSome cc (Some x) = cc x
 
@@ -109,7 +113,7 @@ unSome cc (Some x) = cc x
 --   >>> type EitherXX = SomeT Some Either
 --   >>> :{
 --   let mkEitherXX :: Either a b -> EitherXX
---       mkEitherXX = SomeT . Some
+--       mkEitherXX = mkSomeT . mkSome
 --       --
 --       unEitherXX :: (forall a b. Either a b -> r) -> EitherXX -> r
 --       unEitherXX cc = unSomeT $ unSome $ cc
@@ -124,6 +128,9 @@ unSome cc (Some x) = cc x
 --   [Left (),Left (),Right ()]
 data SomeT t f where
     SomeT :: t (f a) -> SomeT t f
+
+mkSomeT :: t (f a) -> SomeT t f
+mkSomeT = SomeT
 
 unSomeT :: (forall a. t (f a) -> r) -> SomeT t f -> r
 unSomeT cc (SomeT x) = cc x
