@@ -133,3 +133,46 @@ mkSomeT = SomeT
 
 unSomeT :: (forall a. t (f a) -> r) -> SomeT t f -> r
 unSomeT cc (SomeT x) = cc x
+
+
+-- |
+-- A variant of `Some` which specifies the type to use instead of existentially
+-- quantifying over it.
+-- 
+-- By mixing `SomeT` and `ThisT`, it's possible to mark only some parameters of
+-- a type constructor as being existentially quantified.
+-- 
+-- Here's `exists a. Either a Int`:
+-- 
+--   >>> type EitherXInt = SomeT (This Int) Either
+--   >>> :{
+--   let mkEitherXInt :: Either a Int -> EitherXInt
+--       mkEitherXInt = mkSomeT . mkThis
+--       --
+--       unEitherXInt :: (forall a. Either a Int -> r) -> EitherXInt -> r
+--       unEitherXInt cc = unSomeT $ unThis $ cc
+--       --
+--       myEitherXInts :: [EitherXInt]
+--       myEitherXInts = [ mkEitherXInt (Left 1)
+--                       , mkEitherXInt (Left "foo")
+--                       , mkEitherXInt (Right 42)
+--                       ]
+--   in map (unEitherXInt (bimap blank id)) myEitherXInts
+--   :}
+--   [Left (),Left (),Right 42]
+type This a = ThisT a Identity
+
+mkThis :: f a -> This a f
+mkThis = mkThisT . Identity
+
+unThis :: (f a -> r) -> This a f -> r
+unThis cc = unThisT (cc . runIdentity)
+
+data ThisT a t f where
+    ThisT :: t (f a) -> ThisT a t f
+
+mkThisT :: t (f a) -> ThisT a t f
+mkThisT = ThisT
+
+unThisT :: (t (f a) -> r) -> ThisT a t f -> r
+unThisT cc (ThisT x) = cc x
